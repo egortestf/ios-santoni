@@ -15,7 +15,7 @@
 [Текущая тестовая сборка](ios-santoni-test-build.zip), около 11 МБ. SHA-256 архива:
 
 ```text
-7e6a6f45ced581c2e66530327c87895f083231a3573b7848b597827af7c29f3e
+45f845cc0a122c63c78546c1720e464d3f841807916fe8c845ab6fc569c84422
 ```
 
 Архив содержит только актуальные компоненты:
@@ -29,11 +29,40 @@
 
 Старых диагностических образов, дампов и журналов в архиве нет.
 
-### Ограничение карты
+### Образ microSD для записи
 
-**Сборка предназначена для уже подготовленной microSD стенда. Универсального установщика для новой карты пока нет.** Образ читает файлы по фиксированным секторам. Простое копирование файлов на произвольную карту не обеспечивает запуск.
+[Скачать SD-образ и контрольные суммы из Releases](https://github.com/egortestf/ios-santoni/releases/tag/checkpoint-2026-11-22).
 
-Системный файл iOS около 2,5 ГБ **не включён**. Нужен отдельно подготовленный совместимый APFS-образ iOS 16.5 с изменениями порта. Произвольный IPSW/стоковый rootfs не является готовой заменой. Подготовка системного файла и новой карты в этот чекпоинт не входят.
+Файл `ios-santoni-checkpoint-sd.img.gz` содержит **весь образ носителя**: MBR, подготовленную систему iOS и Mesa на нужных секторах. Он собран с нуля из системных файлов, не является дампом личной карты. Для GitHub файл разделён на `.001` и `.002`, суммарно около 2,66 ГБ. Распакованный `.img` занимает **13 778 288 640 байт**; нужна microSD от **16 ГБ** (64 ГБ также подходит). Это та же тестовая система с теми же ограничениями и таймером.
+
+**Запись полностью уничтожит содержимое выбранной карты.** Сохраните нужные файлы и тщательно выберите устройство.
+
+1. Скачайте **обе части** `.img.gz.001` и `.img.gz.002`, `SHA256SUMS` и свежий `ios-santoni-test-build.zip`. Старый lk2nd из первой версии архива принимал только ёмкость карты стенда; используйте обновлённый архив.
+2. Проверьте SHA-256 частей по `SHA256SUMS`, затем объедините их в папке загрузки. В PowerShell:
+
+```powershell
+cmd /c copy /b ios-santoni-checkpoint-sd.img.gz.001+ios-santoni-checkpoint-sd.img.gz.002 ios-santoni-checkpoint-sd.img.gz
+Get-FileHash .\ios-santoni-checkpoint-sd.img.gz -Algorithm SHA256
+```
+
+В Linux/macOS: `cat ios-santoni-checkpoint-sd.img.gz.001 ios-santoni-checkpoint-sd.img.gz.002 > ios-santoni-checkpoint-sd.img.gz`. SHA-256 объединённого gzip:
+
+```text
+c8524bbc414e16f4bac384c4a4b853bab443271b19cf62a2efaab273d85541ee
+```
+
+Освободите место для частей, объединённого gzip и распакованного образа (около 20 ГБ). Не запускайте объединение повторно поверх нужного файла без проверки.
+3. Распакуйте gzip в `.img`. В программе записи сырых образов, например [balenaEtcher](https://etcher.balena.io/) ([документация](https://etcher-docs.balena.io/)), выберите **файл `.img`**, нужную microSD и запишите образ с последующей проверкой. Это запись на **всё устройство**, не копирование файла на раздел. Предварительное форматирование не требуется.
+4. После записи Windows/Android могут предложить форматировать неизвестные APFS-разделы — **откажитесь**. Остаток ёмкости больших карт пока не используется; разделы не перемещайте.
+5. Безопасно извлеките карту, вставьте в Redmi и выполните раздел «Запуск» ниже. Инициализация через `fastboot oem santoni-sd-init` по-прежнему нужна.
+
+Содержимое и контрольные суммы разделов проверены в файле-образе. Запись этого файла на отдельную новую физическую карту и её загрузка пока не проверялись; исходные системные байты совпадают с рабочей картой побайтно. Новый образ **не заменяет Android на внутренней памяти** и сам по себе не запускается без RAM boot-образа.
+
+### Размещение данных (для ручной подготовки)
+
+Готовый SD-образ из Releases уже содержит нужное размещение. Сведения ниже нужны при ручной подготовке: boot-образ читает фиксированные сектора, поэтому простое копирование файлов на произвольную карту не обеспечивает запуск.
+
+Системный APFS около 2,5 ГБ включён **в SD-образ из Releases**, но не в маленький ZIP с `boot.img`. При ручной подготовке нужен совместимый APFS iOS 16.5 с изменениями порта: произвольный IPSW/стоковый rootfs не является готовой заменой.
 
 Карта стенда: 64 ГБ, 122138624 сектора по 512 байт. Адреса, встроенные в `boot.img`:
 
@@ -132,7 +161,7 @@ Smoothness remains inconsistent. The user noted a small improvement; the latest 
 [Current test build](ios-santoni-test-build.zip), about 11 MB. Archive SHA-256:
 
 ```text
-7e6a6f45ced581c2e66530327c87895f083231a3573b7848b597827af7c29f3e
+45f845cc0a122c63c78546c1720e464d3f841807916fe8c845ab6fc569c84422
 ```
 
 Only current components are included:
@@ -146,11 +175,40 @@ Only current components are included:
 
 Old diagnostic images, dumps and logs are excluded.
 
-### Card limitation
+### Whole-card microSD image
 
-**This build targets the project's already prepared microSD. There is no universal installer for a new card yet.** Files are read using fixed sector mappings; copying files to an arbitrary card does not make it bootable.
+[Download the SD image and checksums from Releases](https://github.com/egortestf/ios-santoni/releases/tag/checkpoint-2026-11-22).
 
-The approximately 2.5 GB iOS system file is **not included**. A separately prepared compatible iOS 16.5 APFS system containing the port's changes is required. A stock IPSW/rootfs is not a drop-in replacement. System-image creation and new-card provisioning are outside this checkpoint.
+`ios-santoni-checkpoint-sd.img.gz` contains the **whole device image**: MBR, the prepared iOS system and Mesa at the required sectors. It is assembled from system files, not a dump of a personal card. GitHub downloads are split into `.001` and `.002`, about 2.66 GB combined. The extracted `.img` is **13,778,288,640 bytes**; use a microSD of **16 GB or larger** (64 GB also works). The same test limitations and timer still apply.
+
+**Writing this image destroys the selected card's contents.** Back up files and carefully identify the target device.
+
+1. Download **both parts**, `.img.gz.001` and `.img.gz.002`, `SHA256SUMS` and the updated `ios-santoni-test-build.zip`. The initial ZIP's lk2nd accepted only the original card capacity; use the updated archive.
+2. Verify the part hashes using `SHA256SUMS`, then join them in the download directory. PowerShell:
+
+```powershell
+cmd /c copy /b ios-santoni-checkpoint-sd.img.gz.001+ios-santoni-checkpoint-sd.img.gz.002 ios-santoni-checkpoint-sd.img.gz
+Get-FileHash .\ios-santoni-checkpoint-sd.img.gz -Algorithm SHA256
+```
+
+Linux/macOS: `cat ios-santoni-checkpoint-sd.img.gz.001 ios-santoni-checkpoint-sd.img.gz.002 > ios-santoni-checkpoint-sd.img.gz`. Combined gzip SHA-256:
+
+```text
+c8524bbc414e16f4bac384c4a4b853bab443271b19cf62a2efaab273d85541ee
+```
+
+Allow about 20 GB free space for parts, combined gzip and extracted image. Check existing output before repeating the join command.
+3. Extract gzip to `.img`. Use a raw-image writer such as [balenaEtcher](https://etcher.balena.io/) ([documentation](https://etcher-docs.balena.io/)): select the **`.img`**, select the microSD, write and validate. Target the **whole device**, not a partition; do not merely copy the image file onto the card. No prior formatting is needed.
+4. Decline any Windows/Android prompt to format the unknown APFS partitions. Extra capacity on larger cards remains unused; do not move the partitions.
+5. Safely eject, insert into Redmi and follow the boot instructions below. `fastboot oem santoni-sd-init` is still required.
+
+The image's partition contents and hashes have been verified. Writing it to a separate new physical card and booting that card have not yet been tested; the system bytes match the working card exactly. The SD image **does not replace internal Android** and still requires the RAM boot image.
+
+### Data layout (manual provisioning)
+
+The release SD image already supplies the required layout. For manual provisioning, the following fixed sector mappings matter; copying files to an arbitrary card does not provide them.
+
+The approximately 2.5 GB prepared APFS system is included **in the release SD image**, not in the small boot ZIP. Manual provisioning requires the compatible modified iOS 16.5 system; a stock IPSW/rootfs is not a drop-in replacement.
 
 Project card: 64 GB, 122138624 sectors of 512 bytes. Hardcoded mappings:
 
